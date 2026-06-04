@@ -1,5 +1,6 @@
 import { spawn, ChildProcessWithoutNullStreams } from "child_process";
 import logger from "../core/logger";
+import { getCleanEnv } from "../core/env";
 
 interface BashSession {
     process: ChildProcessWithoutNullStreams;
@@ -23,7 +24,7 @@ export const createBashSession = (userId: number): { success: boolean; message: 
 
         const proc = spawn("bash", ["-i"], {
             stdio: ["pipe", "pipe", "pipe"],
-            env: { ...process.env, TERM: "dumb", PS1: "$ " },
+            env: { ...getCleanEnv(), TERM: "dumb", PS1: "$ " },
         });
 
         const session: BashSession = {
