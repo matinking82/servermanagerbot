@@ -13,6 +13,7 @@ import { nginxMenuHandler, nginxCallbackHandler, nginxMessageHandler } from "./n
 import { mysqlMenuHandler, mysqlCallbackHandler, mysqlMessageHandler } from "./mysqlHandlers";
 import { bashStartHandler, bashMessageHandler, bashCallbackHandler } from "./bashHandlers";
 import { fileExplorerMenuHandler, fileExplorerCallbackHandler, fileExplorerMessageHandler } from "./fileExplorerHandlers";
+import { gitMenuHandler, gitCallbackHandler, gitMessageHandler } from "./gitHandlers";
 
 export const startHandler = async (ctx: Context, start = true) => {
     let userId = ctx.from.id;
@@ -74,6 +75,9 @@ export const callBackHandler = async (ctx: Context) => {
         case "fe":
             await fileExplorerCallbackHandler(ctx, action, params);
             break;
+        case "git":
+            await gitCallbackHandler(ctx, action, params);
+            break;
         default:
             await ctx.answerCallbackQuery({ text: "Unknown action" });
             break;
@@ -106,6 +110,9 @@ const handleMenuCallback = async (ctx: Context, action: string) => {
             break;
         case "files":
             await fileExplorerMenuHandler(ctx);
+            break;
+        case "git":
+            await gitMenuHandler(ctx);
             break;
     }
 };
@@ -152,6 +159,8 @@ export const messagesHandler = async (ctx: Context) => {
             return await mysqlMenuHandler(ctx);
         case menuOptions.files:
             return await fileExplorerMenuHandler(ctx);
+        case menuOptions.git:
+            return await gitMenuHandler(ctx);
     }
 
 
@@ -190,6 +199,13 @@ export const messagesHandler = async (ctx: Context) => {
         case UserState.file_explorer_create_file:
         case UserState.file_explorer_create_file_content:
             return await fileExplorerMessageHandler(ctx, state);
+
+        // Git multi-step flows
+        case UserState.git_commit_msg:
+        case UserState.git_branch_name:
+        case UserState.git_remote_name:
+        case UserState.git_remote_url:
+            return await gitMessageHandler(ctx, state);
 
         default:
             return await ctx.reply("🤔 Not sure what you mean.\n\nUse the menu buttons or /start to go back to the main menu.");

@@ -29,4 +29,10 @@ export enum UserState {
     file_explorer_create_folder = "file_explorer_create_folder",
     file_explorer_create_file = "file_explorer_create_file",
     file_explorer_create_file_content = "file_explorer_create_file_content",
+    // Git
+    git_menu = "git_menu",
+    git_commit_msg = "git_commit_msg",
+    git_branch_name = "git_branch_name",
+    git_remote_name = "git_remote_name",
+    git_remote_url = "git_remote_url",
 }
