@@ -1,21 +1,32 @@
-# BaseBot - Telegram Bot Boilerplate
+# Server Manager Bot
 
-BaseBot is a robust boilerplate for building Telegram bots using TypeScript, the [grammY](https://grammy.dev/) framework, and [Prisma](https://www.prisma.io/) ORM with MariaDB/MySQL. It provides built-in admin authentication, modular handler structures, logging, and an easy-to-deploy Docker Compose setup.
+A powerful Telegram bot designed to help system administrators and developers manage their Linux servers directly from Telegram. Built with TypeScript, grammY, and Prisma, this bot provides a secure and feature-rich interface for remote server administration.
 
-## Features
+## Key Features
 
-- **TypeScript** for static typing and modern JavaScript features.
-- **grammY** framework for interacting with the Telegram Bot API.
-- **Prisma ORM** coupled with MariaDB/MySQL for database management.
-- **Admin System** with `/login` and `/logout` commands.
-- **Auto Initialization** of the admin user on startup.
-- **Winston logger** for flexible and structured logging.
-- **Dockerized**: Includes `Dockerfile` and `docker-compose.yml` for quick and reproducible deployments.
+This bot acts as a comprehensive remote control for your server, offering the following capabilities:
+
+- **Bash Command Execution**: Run arbitrary shell commands directly from your chat.
+- **File Explorer**: Browse your server's filesystem, view, and manage files.
+- **Docker Management**: View and manage Docker containers, images, and volumes.
+- **PM2 Process Manager**: Monitor and control applications managed by PM2.
+- **NGINX Management**: Control NGINX server configurations and services.
+- **MySQL Database Management**: Interact with and manage your MySQL databases.
+- **Git Integration**: Manage Git repositories, pull changes, and view status.
+- **Tmux Session Control**: Manage your background Tmux sessions.
+- **Secure Admin System**: Built-in authentication (`/login`, `/logout`) ensures only authorized users can access sensitive server functions.
+
+## Technology Stack
+
+- **Bot Framework**: [grammY](https://grammy.dev/)
+- **Language**: TypeScript
+- **Database ORM**: [Prisma](https://www.prisma.io/) (with MariaDB/MySQL)
+- **Logging**: Winston
 
 ## Prerequisites
 
 - [Node.js](https://nodejs.org/) (v18+ recommended)
-- [Docker](https://www.docker.com/) and Docker Compose (if running via Docker)
+- [Docker](https://www.docker.com/) and Docker Compose (recommended for deployment)
 - A Telegram Bot Token from [@BotFather](https://t.me/botfather)
 
 ## Setup and Installation
@@ -31,25 +42,17 @@ cp .env.example .env
 Open `.env` and configure the essential variables:
 - `BOT_TOKEN`: Your Telegram bot token.
 - `INITUSERNAME` & `INITPASSWORD`: The credentials for the initial admin user.
-- Database configurations (if running locally without Docker).
+- Database configurations.
 
-### 2. Running with Docker (Recommended)
+### 2. Running with Docker Compose (Recommended)
 
-The easiest way to start the bot and its database is using Docker Compose:
+To start the bot and its database container using Docker Compose:
 
 ```bash
 docker-compose up -d --build
 ```
 
-This will start two containers:
-1. `basebot-db`: MariaDB database container.
-2. `basebot-app`: The Node.js application running the bot.
-
-Prisma will automatically manage database migrations/pushes when the app starts using `docker-entrypoint.sh` (or you can run `npx prisma db push` manually within the container if needed).
-
 ### 3. Running Locally (Development)
-
-To run the bot locally without Docker:
 
 1. Install dependencies:
    ```bash
@@ -70,21 +73,14 @@ To run the bot locally without Docker:
 
 ## Usage
 
-Once the bot is running:
-- Open Telegram and search for your bot.
-- Send `/start` to interact with it.
-- Send `/login` and provide the `INITUSERNAME` and `INITPASSWORD` credentials to log in as an administrator.
-- Send `/logout` to drop admin privileges.
+1. Open Telegram and start a chat with your bot (`/start`).
+2. Send `/login` and provide your `INITUSERNAME` and `INITPASSWORD` to authenticate.
+3. Once logged in as an admin, use the interactive menus to access the server management features like Bash, Docker, PM2, and the File Explorer.
+4. Send `/logout` when you are done to revoke your admin privileges.
 
-## Project Structure
+## Security Warning
 
-- `bot.ts` - Bot instance initialization and command routing.
-- `index.ts` - Entry point that initializes the database (admin) and starts the bot.
-- `botHandlers/` - Specific logic for commands and callbacks (e.g., `generalHandlers`, `adminHandlers`).
-- `core/` - Core utilities like the Winston logger.
-- `middlewares/` - Bot middlewares (e.g., `loginUserMiddleware`).
-- `prisma/` - Prisma schema (`schema.prisma`) and configuration.
-- `services/` - Business logic and database interaction services.
+**⚠️ IMPORTANT**: This bot provides system-level access to your server via Telegram. Ensure you keep your bot token secure, use strong admin credentials, and consider running the bot user with restricted system permissions if you don't need full root access for all features.
 
 ## License
 
