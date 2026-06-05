@@ -35,4 +35,5 @@ export enum UserState {
     git_branch_name = "git_branch_name",
     git_remote_name = "git_remote_name",
     git_remote_url = "git_remote_url",
+    file_explorer_edit_file = "file_explorer_edit_file",
 }

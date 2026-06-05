@@ -158,6 +158,28 @@ export const createFile = (dirPath: string, fileName: string, content: string | 
 };
 
 /**
+ * Update an existing file
+ */
+export const updateFile = (filePath: string, content: string | Buffer): { success: boolean; message: string } => {
+    try {
+        if (!fs.existsSync(filePath)) {
+            return { success: false, message: "❌ File does not exist" };
+        }
+
+        const stat = fs.statSync(filePath);
+        if (!stat.isFile()) {
+            return { success: false, message: "❌ Target is not a file" };
+        }
+
+        fs.writeFileSync(filePath, content);
+        return { success: true, message: `✅ Updated file: ${path.basename(filePath)}` };
+    } catch (error) {
+        logger.error(error, { section: "updateFile" });
+        return { success: false, message: "Error updating file" };
+    }
+};
+
+/**
  * Delete a file or empty folder
  */
 export const deleteItem = (itemPath: string): { success: boolean; message: string } => {

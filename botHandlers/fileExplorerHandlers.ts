@@ -1,6 +1,6 @@
 import { Context, InlineKeyboard, InputFile } from "grammy";
 import { isAdmin } from "../core/adminCheck";
-import { listDirectory, createFolder, createFile, deleteItem, getFileInfo, formatFileSize } from "../services/fileExplorerServices";
+import { listDirectory, createFolder, createFile, updateFile, deleteItem, getFileInfo, formatFileSize } from "../services/fileExplorerServices";
 import { getUserData, setUserData, setUserState } from "../services/userDbServices";
 import { UserState } from "../core/enums";
 import logger from "../core/logger";
@@ -162,12 +162,56 @@ export const fileExplorerCallbackHandler = async (ctx: Context, action: string, 
                 }
 
                 await ctx.answerCallbackQuery();
+                const encoded = encodePath(filePath);
+                const kb = new InlineKeyboard()
+                    .text("⬇️ Download", `fe_download_${encoded}`)
+                    .text("✏️ Edit", `fe_edit_${encoded}`)
+                    .row();
+                const fileName = path.basename(filePath);
+                await ctx.reply(`📄 File: ${fileName}\n\nWhat would you like to do?`, { reply_markup: kb });
+                break;
+            }
+
+            case "download": {
+                const filePath = decodePath(params[0]);
+                const fileInfo = getFileInfo(filePath);
+
+                if (!fileInfo.success || !fileInfo.exists || !fileInfo.isFile) {
+                    await ctx.answerCallbackQuery({ text: "❌ File not found" });
+                    return;
+                }
+
+                await ctx.answerCallbackQuery();
                 await ctx.reply("📤 Sending file to you...");
 
                 const fileName = path.basename(filePath);
                 await ctx.replyWithDocument(new InputFile(filePath), {
                     caption: fileName,
                 });
+                break;
+            }
+
+            case "edit": {
+                const filePath = decodePath(params[0]);
+                const fileInfo = getFileInfo(filePath);
+
+                if (!fileInfo.success || !fileInfo.exists || !fileInfo.isFile) {
+                    await ctx.answerCallbackQuery({ text: "❌ File not found" });
+                    return;
+                }
+
+                await ctx.answerCallbackQuery();
+                const fileName = path.basename(filePath);
+                await ctx.replyWithDocument(new InputFile(filePath), {
+                    caption: `📄 Editing: ${fileName}\n\nSend the edited file back, or send the new text content for this file.`,
+                });
+
+                const userId = ctx.from?.id as number;
+                const userData = await getUserData(userId);
+                const data = userData.success ? (userData.data || {}) : {};
+                data.fileExplorerEditPath = filePath;
+                await setUserData(userId, data);
+                await setUserState(userId, UserState.file_explorer_edit_file);
                 break;
             }
 
@@ -375,6 +419,46 @@ export const fileExplorerMessageHandler = async (ctx: Context, state: string) =>
 
                 // Show directory listing
                 await fileExplorerMenuHandler(ctx, dirPath);
+                break;
+            }
+
+            case UserState.file_explorer_edit_file: {
+                const filePath = userData.data?.fileExplorerEditPath;
+                if (!filePath) {
+                    await ctx.reply("❌ Error: file context lost. Please start over.");
+                    await setUserState(userId, UserState.start);
+                    return;
+                }
+
+                if (ctx.message?.document) {
+                    const fileId = ctx.message.document.file_id;
+                    const file = await ctx.api.getFile(fileId);
+                    
+                    if (!file.file_path) {
+                        await ctx.reply("❌ Error getting file path.");
+                        return;
+                    }
+
+                    const response = await fetch(`https://api.telegram.org/file/bot${process.env.BOT_TOKEN}/${file.file_path}`);
+                    const arrayBuffer = await response.arrayBuffer();
+                    const buffer = Buffer.from(arrayBuffer);
+
+                    const result = updateFile(filePath, buffer);
+                    await ctx.reply(result.message);
+                } else if (text) {
+                    const result = updateFile(filePath, text);
+                    await ctx.reply(result.message);
+                } else {
+                    await ctx.reply("❌ Please send text or upload a document.");
+                    return;
+                }
+
+                // Reset state
+                await setUserState(userId, UserState.start);
+
+                // Show directory listing
+                const dirPathForMenu = path.dirname(filePath);
+                await fileExplorerMenuHandler(ctx, dirPathForMenu);
                 break;
             }
 
