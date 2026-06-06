@@ -6,7 +6,9 @@ import { tmuxList, tmuxKill } from "../services/tmuxServices";
 /**
  * Build the tmux session list message text and inline keyboard.
  */
-const buildTmuxMessage = async (): Promise<{ text: string; keyboard: InlineKeyboard }> => {
+const PAGE_SIZE = 5;
+
+const buildTmuxMessage = async (page: number = 0): Promise<{ text: string; keyboard: InlineKeyboard }> => {
     const result = await tmuxList();
 
     if (!result.success) {
@@ -25,11 +27,19 @@ const buildTmuxMessage = async (): Promise<{ text: string; keyboard: InlineKeybo
         };
     }
 
-    let text = "📋 *Tmux Sessions*\n\n";
+    const totalSessions = sessions.length;
+    const totalPages = Math.ceil(totalSessions / PAGE_SIZE);
+
+    if (page >= totalPages && totalPages > 0) page = totalPages - 1;
+    if (page < 0) page = 0;
+
+    let text = `📋 *Tmux Sessions* (Page ${page + 1}/${totalPages})\n\n`;
 
     const keyboard = new InlineKeyboard();
 
-    for (const session of sessions) {
+    const currentSessions = sessions.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE);
+
+    for (const session of currentSessions) {
         const attachedEmoji = session.attached ? "🔗" : "💤";
 
         text += `${attachedEmoji} *${session.name}*\n`;
@@ -37,6 +47,12 @@ const buildTmuxMessage = async (): Promise<{ text: string; keyboard: InlineKeybo
         text += `   Status: ${session.attached ? "Attached" : "Detached"}\n\n`;
 
         keyboard.text(`❌ Kill ${session.name}`, `tmux_kill_${session.name}`).row();
+    }
+
+    if (totalPages > 1) {
+        if (page > 0) keyboard.text("◀️ Prev", `tmux_page_${page - 1}`);
+        if (page < totalPages - 1) keyboard.text("▶️ Next", `tmux_page_${page + 1}`);
+        keyboard.row();
     }
 
     keyboard.text("🔄 Refresh", "tmux_refresh");
@@ -73,7 +89,27 @@ export const tmuxCallbackHandler = async (ctx: Context, action: string, params: 
         const chatId = ctx.callbackQuery?.message?.chat.id;
         const messageId = ctx.callbackQuery?.message?.message_id;
 
+        const msgText = ctx.callbackQuery?.message?.text || "";
+        let currentPage = 0;
+        const match = msgText.match(/Page (\d+)\//);
+        if (match) {
+            currentPage = parseInt(match[1], 10) - 1;
+        }
+
         switch (action) {
+            case "page": {
+                const page = parseInt(params[0], 10) || 0;
+                if (chatId && messageId) {
+                    const { text, keyboard } = await buildTmuxMessage(page);
+                    await ctx.api.editMessageText(chatId, messageId, text, {
+                        parse_mode: "Markdown",
+                        reply_markup: keyboard,
+                    });
+                }
+                await ctx.answerCallbackQuery();
+                break;
+            }
+
             case "kill": {
                 const sessionName = params[0];
                 const result = await tmuxKill(sessionName);
@@ -81,7 +117,7 @@ export const tmuxCallbackHandler = async (ctx: Context, action: string, params: 
 
                 // Refresh the session list
                 if (chatId && messageId) {
-                    const { text, keyboard } = await buildTmuxMessage();
+                    const { text, keyboard } = await buildTmuxMessage(currentPage);
                     await ctx.api.editMessageText(chatId, messageId, text, {
                         parse_mode: "Markdown",
                         reply_markup: keyboard,
@@ -94,7 +130,7 @@ export const tmuxCallbackHandler = async (ctx: Context, action: string, params: 
                 await ctx.answerCallbackQuery({ text: "🔄 Refreshing..." });
 
                 if (chatId && messageId) {
-                    const { text, keyboard } = await buildTmuxMessage();
+                    const { text, keyboard } = await buildTmuxMessage(currentPage);
                     await ctx.api.editMessageText(chatId, messageId, text, {
                         parse_mode: "Markdown",
                         reply_markup: keyboard,

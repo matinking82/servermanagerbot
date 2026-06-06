@@ -86,6 +86,22 @@ export const pm2Restart = async (nameOrId: string): Promise<{ success: boolean; 
 };
 
 /**
+ * Delete a PM2 process by name/id
+ */
+export const pm2Delete = async (nameOrId: string): Promise<{ success: boolean; message: string }> => {
+    try {
+        const result = await execCommand(`pm2 delete ${nameOrId}`);
+        return {
+            success: result.success,
+            message: result.success ? `✅ Deleted ${nameOrId}` : `❌ Failed to delete: ${result.error}`,
+        };
+    } catch (error) {
+        logger.error(error, { section: "pm2Delete" });
+        return { success: false, message: "Error deleting process" };
+    }
+};
+
+/**
  * Get PM2 logs for a process (last N lines)
  */
 export const pm2Logs = async (nameOrId: string, lines: number = 20): Promise<{ success: boolean; output: string; message?: string }> => {

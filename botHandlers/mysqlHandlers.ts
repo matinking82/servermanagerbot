@@ -43,6 +43,8 @@ export const mysqlCallbackHandler = async (ctx: Context, action: string, params:
 
         switch (action) {
             case "dblist": {
+                let page = parseInt(params[0] || "0", 10);
+                const PAGE_SIZE = 5;
                 let result = await mysqlListDatabases();
 
                 if (!result.success) {
@@ -50,17 +52,39 @@ export const mysqlCallbackHandler = async (ctx: Context, action: string, params:
                     return;
                 }
 
+                const databases = result.databases;
+                const totalPages = Math.ceil(databases.length / PAGE_SIZE) || 1;
+                if (page >= totalPages) page = totalPages - 1;
+                if (page < 0) page = 0;
+
                 let kb = new InlineKeyboard();
 
-                for (let db of result.databases) {
+                const currentDbs = databases.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE);
+
+                for (let db of currentDbs) {
                     kb.text(db, `mysql_selectdb_${db}`).row();
                 }
 
-                kb.text("🔄 Refresh", "mysql_dblist").row();
+                if (totalPages > 1) {
+                    if (page > 0) kb.text("◀️ Prev", `mysql_dblist_${page - 1}`);
+                    if (page < totalPages - 1) kb.text("▶️ Next", `mysql_dblist_${page + 1}`);
+                    kb.row();
+                }
 
-                await ctx.reply("📋 Databases:", {
-                    reply_markup: kb,
-                });
+                kb.text("🔄 Refresh", `mysql_dblist_${page}`).row();
+
+                const msgText = `📋 Databases (Page ${page + 1}/${totalPages}):`;
+
+                if (ctx.callbackQuery?.message) {
+                    await ctx.api.editMessageText(ctx.callbackQuery.message.chat.id, ctx.callbackQuery.message.message_id, msgText, {
+                        reply_markup: kb,
+                    });
+                    await ctx.answerCallbackQuery();
+                } else {
+                    await ctx.reply(msgText, {
+                        reply_markup: kb,
+                    });
+                }
                 break;
             }
 
@@ -112,6 +136,8 @@ export const mysqlCallbackHandler = async (ctx: Context, action: string, params:
 
             case "tables": {
                 let dbName = params[0];
+                let page = parseInt(params[1] || "0", 10);
+                const PAGE_SIZE = 5;
 
                 if (!dbName) {
                     await ctx.reply("❌ No database specified.");
@@ -129,27 +155,52 @@ export const mysqlCallbackHandler = async (ctx: Context, action: string, params:
                     let kb = new InlineKeyboard();
                     kb.text("⬅️ Back", `mysql_selectdb_${dbName}`).row();
 
-                    await ctx.reply(`📋 No tables found in '${dbName}'.`, {
-                        reply_markup: kb,
-                    });
+                    if (ctx.callbackQuery?.message) {
+                        await ctx.api.editMessageText(ctx.callbackQuery.message.chat.id, ctx.callbackQuery.message.message_id, `📋 No tables found in '${dbName}'.`, { reply_markup: kb });
+                        await ctx.answerCallbackQuery();
+                    } else {
+                        await ctx.reply(`📋 No tables found in '${dbName}'.`, { reply_markup: kb });
+                    }
                     return;
                 }
 
+                const tables = result.tables;
+                const totalPages = Math.ceil(tables.length / PAGE_SIZE) || 1;
+                if (page >= totalPages) page = totalPages - 1;
+                if (page < 0) page = 0;
+
                 let kb = new InlineKeyboard();
 
-                for (let table of result.tables) {
+                const currentTables = tables.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE);
+
+                for (let table of currentTables) {
                     kb.text(`📊 Last 20 Rows`, `mysql_rows_${dbName}_${table}`)
                         .text(`ℹ️ Details`, `mysql_details_${dbName}_${table}`)
                         .row();
                     // Add table name as a label row
-                    kb.text(`📄 ${table}`, `mysql_tables_${dbName}`).row();
+                    kb.text(`📄 ${table}`, `mysql_tables_${dbName}_${page}`).row();
+                }
+
+                if (totalPages > 1) {
+                    if (page > 0) kb.text("◀️ Prev", `mysql_tables_${dbName}_${page - 1}`);
+                    if (page < totalPages - 1) kb.text("▶️ Next", `mysql_tables_${dbName}_${page + 1}`);
+                    kb.row();
                 }
 
                 kb.text("⬅️ Back", `mysql_selectdb_${dbName}`).row();
 
-                await ctx.reply(`📋 Tables in '${dbName}':`, {
-                    reply_markup: kb,
-                });
+                const msgText = `📋 Tables in '${dbName}' (Page ${page + 1}/${totalPages}):`;
+
+                if (ctx.callbackQuery?.message) {
+                    await ctx.api.editMessageText(ctx.callbackQuery.message.chat.id, ctx.callbackQuery.message.message_id, msgText, {
+                        reply_markup: kb,
+                    });
+                    await ctx.answerCallbackQuery();
+                } else {
+                    await ctx.reply(msgText, {
+                        reply_markup: kb,
+                    });
+                }
                 break;
             }
 
