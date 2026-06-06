@@ -14,6 +14,7 @@ import { mysqlMenuHandler, mysqlCallbackHandler, mysqlMessageHandler } from "./m
 import { bashStartHandler, bashMessageHandler, bashCallbackHandler } from "./bashHandlers";
 import { fileExplorerMenuHandler, fileExplorerCallbackHandler, fileExplorerMessageHandler } from "./fileExplorerHandlers";
 import { gitMenuHandler, gitCallbackHandler, gitMessageHandler } from "./gitHandlers";
+import { systemMenuHandler, systemCallbackHandler } from "./systemHandlers";
 
 export const startHandler = async (ctx: Context, start = true) => {
     let userId = ctx.from.id;
@@ -78,6 +79,9 @@ export const callBackHandler = async (ctx: Context) => {
         case "git":
             await gitCallbackHandler(ctx, action, params);
             break;
+        case "system":
+            await systemCallbackHandler(ctx, action, params);
+            break;
         default:
             await ctx.answerCallbackQuery({ text: "Unknown action" });
             break;
@@ -113,6 +117,9 @@ const handleMenuCallback = async (ctx: Context, action: string) => {
             break;
         case "git":
             await gitMenuHandler(ctx);
+            break;
+        case "system":
+            await systemMenuHandler(ctx);
             break;
     }
 };
@@ -161,6 +168,8 @@ export const messagesHandler = async (ctx: Context) => {
             return await fileExplorerMenuHandler(ctx);
         case menuOptions.git:
             return await gitMenuHandler(ctx);
+        case menuOptions.system:
+            return await systemMenuHandler(ctx);
     }
 
 

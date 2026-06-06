@@ -25,6 +25,7 @@ export const menuOptions = {
     mysql: "🗄️ MySQL Manager",
     files: "📂 File Explorer",
     git: "🐙 Git Manager",
+    system: "📊 System Usage",
 }
 
 export const menuKeyboard = () => {
@@ -34,7 +35,7 @@ export const menuKeyboard = () => {
     kb.text(menuOptions.pm2).text(menuOptions.tmux).row();
     kb.text(menuOptions.docker).text(menuOptions.nginx).row();
     kb.text(menuOptions.mysql).text(menuOptions.files).row();
-    kb.text(menuOptions.git).row();
+    kb.text(menuOptions.git).text(menuOptions.system).row();
 
     kb.resize_keyboard = true;
 
@@ -48,7 +49,7 @@ export const adminMainMenu = () => {
     kb.text("📦 PM2", "menu_pm2").text("🪟 Tmux", "menu_tmux").row();
     kb.text("🐳 Docker", "menu_docker").text("🌐 Nginx", "menu_nginx").row();
     kb.text("🗄️ MySQL", "menu_mysql").text("📂 Files", "menu_files").row();
-    kb.text("🐙 Git", "menu_git").row();
+    kb.text("🐙 Git", "menu_git").text("📊 System", "menu_system").row();
 
     return kb;
 };
